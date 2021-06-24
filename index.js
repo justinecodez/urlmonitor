@@ -4,6 +4,15 @@ const express = require('express');
 const mongoose = require('mongoose')
 const Url = require('./models/url')
 
+/*
+    ...................TODOS..................
+    1.send url list to database
+    2.get url list from database 
+    5.from scheduler send data to database using socket;
+    6.get data from database and analyse it, if website was not available in previous 6 minutes send report via email.
+    4.Test for for url availability on schedule
+    3.Use web socket to send data to client on real time without reloading
+*/
 
 const app = express();
 app.use(express.json());
@@ -25,38 +34,30 @@ mongoose
         console.error(error);
     });
 
-//send url list to database
-//get url list from database 
-//Test for for url availability on schedule
-//from scheduler send data to database using socket or windows event;
-//get data from database and analyse it, if website was not available in previous 6 minutes send report via email.
-
-let websites = [
-    {
-        url: "https://www.github.com"
-    },
-    {
-        url: "http://www.facebook.com"
-    },
-    {
-        url: "http://www.twitter.com"
-    }
-]
-
 const data = []
-//prepare socket
-// cron.schedule('* * * * * *', () => {
-//     websites.forEach(async (web) => {
-//         let res = await fetch(web.url)
-//         data.push({
-//             url: res.url,
-//             status: res.status,
-//             timeStamp: Date.now()
-//         })
-//     });
 
-//     console.log(data)
-// });
+cron.schedule('*/10 * * * * *',() => {
+    try {
+        async function fetchWebsiesJSON() {
+            const response = await fetch('http://www.localhost:3000/geturl');
+            const websites = await response.json();
+            return websites;
+        }
+        fetchWebsiesJSON().then((websites)=>{
+            websites.forEach(async (web) => {
+                let res = await fetch(web.url)
+                data.push({
+                    url: res.url,
+                    status: res.status,
+                    timeStamp: Date.now()
+                })
+            });
+        })   
+    } catch (error) {
+       console.log(error)
+    }
+    console.log(data)
+});
 
 //setting urls 
 app.post('/seturl', (req, res, next) => {
@@ -76,7 +77,6 @@ app.post('/seturl', (req, res, next) => {
 app.get('/geturl', async (req, res, next) => {
     try {
         let urls = await Url.find({})
-        console.log(urls)
         res.send(urls)
     } catch (error) {
         res.send(error)
