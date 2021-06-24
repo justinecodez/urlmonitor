@@ -2,11 +2,19 @@ const cron = require('node-cron');
 const fetch = require('node-fetch');
 const express = require('express');
 const mongoose = require('mongoose')
+const Url = require('./models/url')
+
+
 const app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+
+
 const port = 3000;
 
 //database connection
-const dburl = "mongodb://localhost:27017/mdn"
+const dburl = "mongodb://localhost:27017/urlmonitor"
 mongoose
     .connect(dburl, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => {
@@ -36,7 +44,7 @@ let websites = [
 ]
 
 const data = []
-
+//prepare socket
 // cron.schedule('* * * * * *', () => {
 //     websites.forEach(async (web) => {
 //         let res = await fetch(web.url)
@@ -50,12 +58,29 @@ const data = []
 //     console.log(data)
 // });
 
+//setting urls 
 app.post('/seturl', (req, res, next) => {
+    let { url } = req.body
+    const web = new Url({
+        url,
+        status: null,
+        timeStamp: null
+    })
+    web.save((err) => {
+        console.log("Url saved")
+        if (err) throw err;
+    });
     res.send('Send url list')
 })
 
-app.get('/geturl', (req, res, next) => {
-    res.send('Ger url list')
+app.get('/geturl', async (req, res, next) => {
+    try {
+        let urls = await Url.find({})
+        console.log(urls)
+        res.send(urls)
+    } catch (error) {
+        res.send(error)
+    }
 })
 
 app.listen(port, console.log(`App listerning on port ${port}`))
