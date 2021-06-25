@@ -1,12 +1,10 @@
-const cron = require('node-cron');
-const fetch = require('node-fetch');
 const express = require('express');
 const mongoose = require('mongoose')
-var moment = require('moment');
 const Url = require('./models/Url')
 const UrlSuccess = require('./models/UrlSuccess')
 const UrlFail = require('./models/UrlFail')
 var urlmon = require('./lib/urlmon');
+
 
 const app = express();
 app.use(express.json());
@@ -15,7 +13,7 @@ app.use(express.urlencoded({ extended: false }));
 const port = 3000;
 
 //Database connection
-const dburl = "mongodb://localhost:27017/urlmonitor"
+const dburl = "mongodb+srv://justine:kox6BpOX6i9SCnwK@cluster0.stbf3.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
 mongoose
     .connect(dburl, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => {
@@ -33,7 +31,7 @@ let urls = [
     "http://www.example.org"
 ]
 
-//monitoring
+//monitoring each url
 urls.forEach((url) => {
     var website = new urlmon({
         url: url,
@@ -42,7 +40,6 @@ urls.forEach((url) => {
 
     website.on('error', (data) => {
         website.stop();
-        console.log(data);
     })
 
     website.on('available', (data) => {
@@ -53,7 +50,6 @@ urls.forEach((url) => {
             timeStamp: Date.now()
         }).save((err) => {
             if (err) throw err;
-            console.log(data)
         })
     })
 
@@ -65,7 +61,6 @@ urls.forEach((url) => {
             timeStamp: Date.now()
         }).save((err) => {
             if (err) throw err;
-            console.log(data)
         })
     })
 
@@ -73,36 +68,41 @@ urls.forEach((url) => {
 })
 
 
-//check url every 2 minutes 
-// cron.schedule('* * * * * *', async () => {
-//     try {
-//         let count = await UrlFail.countDocuments()
-//         if (count > 3) {
-//             let lasteEntry = await UrlFail.find().sort({ $natural: -1 }).limit(1)
-//             let lastThreeEntry = await UrlFail.find({ url: lasteEntry[0].url }).sort({ $natural: -1 }).limit(3)
-//             if (lastThreeEntry) {
-//                 console.log("Time One: " + Math.round((lastThreeEntry[0].timeStamp - lastThreeEntry[1].timeStamp) / (1000 * 60)))
-//                 console.log("Time Two: " + Math.round((lastThreeEntry[1].timeStamp - lastThreeEntry[2].timeStamp) / (1000 * 60)))
-//             }
-//         }
+//Checking for 3 consercutive fails and sending report to console.
+async function monitorListingsUsingEventEmitter() {
+    const changeStream = UrlFail.watch();
+    changeStream.on('change', async (changes) => {
+        try {
+            let count = await UrlFail.countDocuments()
+            if (count > 3) {
+                let lastEntry = await UrlFail.find().sort({ $natural: -1 }).limit(1)
+                let last3E = await UrlFail.find({ url: lastEntry[0].url }).sort({ $natural: -1 }).limit(3)
 
-//     } catch (error) {
-//         console.error(error)
-//     }
-// })
+                if (last3E) {
+                    let time1 = Math.round((last3E[0].timeStamp - last3E[1].timeStamp) / (1000 * 60))
+                    let time2 = Math.round((last3E[1].timeStamp - last3E[2].timeStamp) / (1000 * 60))
+                    if (time1 === time2) {
+                        console.log({
+                            SatusReport: {
+                                url: lastEntry[0].url,
+                                status: lastEntry[0].status,                                
+                                statusText: lastEntry[0].statusText
+                            }
+                        })
+                    }
+                }
+                console.log("changed")
+            }
 
-
-
-app.post('/seturl', (req, res, next) => {
-    let { url } = req.body
-    const web = new Url({
-        url
-    })
-    web.save((err) => {
-        console.log("Url saved")
-        if (err) throw err;
+        } catch (error) {
+            console.error(error)
+        }
     });
-    res.send('Send url list')
-})
+}
+monitorListingsUsingEventEmitter();
+
+app.get('/', function (req, res) {
+    res.send("Express monitoring, please observer the terminal console...");
+});
 
 app.listen(port, console.log(`App listerning on port ${port}`))
