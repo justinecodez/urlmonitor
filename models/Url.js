@@ -3,9 +3,7 @@ const mongoose = require('mongoose')
 const Schema = mongoose.Schema;
 
 const UrlModelSchema = new Schema({
-    url: String,
-    status: Number,
-    timeStamp: Date
+    url: String
 });
 
 
