@@ -2,14 +2,12 @@ const cron = require('node-cron');
 const fetch = require('node-fetch');
 const express = require('express');
 const mongoose = require('mongoose')
-const Url = require('./models/url')
-
+const Url = require('./models/Url')
+const UrlStatus = require('./models/UrlStatus')
 /*
     ...................TODOS..................
-    1.send url list to database
-    2.get url list from database 
-    5.from scheduler send data to database using socket;
-    6.get data from database and analyse it, if website was not available in previous 6 minutes send report via email.
+    5.from scheduler send status data to database
+    6.get data from mongo 
     4.Test for for url availability on schedule
     3.Use web socket to send data to client on real time without reloading
 */
@@ -17,8 +15,6 @@ const Url = require('./models/url')
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-
 
 const port = 3000;
 
@@ -34,30 +30,41 @@ mongoose
         console.error(error);
     });
 
-const data = []
-
-cron.schedule('*/10 * * * * *',() => {
+cron.schedule('*/2 * * * * *', async () => {
     try {
-        async function fetchWebsiesJSON() {
-            const response = await fetch('http://www.localhost:3000/geturl');
-            const websites = await response.json();
-            return websites;
-        }
-        fetchWebsiesJSON().then((websites)=>{
+        const response = await fetch('http://www.localhost:3000/geturl');
+        const websites = await response.json();
+        if (websites) {
             websites.forEach(async (web) => {
-                let res = await fetch(web.url)
-                data.push({
-                    url: res.url,
-                    status: res.status,
-                    timeStamp: Date.now()
-                })
+                try {
+                    const webStatus = await fetch(web.url)
+                    let res = await fetch("http://www.localhost:3000/seturlstatus", {
+                        method: "post",
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            url: webStatus.url,
+                            status: webStatus.status,
+                            timeStamp: Date.now()
+                        })
+                    })
+                    console.log(res)
+                } catch (error) {
+                    console.error(error);
+                }
             });
-        })   
+        }
     } catch (error) {
-       console.log(error)
+        console.log(error)
     }
-    console.log(data)
+    console.log("Schedulling")
 });
+
+//get data from database status data and analyse
+//send report time stamp if there are 3 consecutive fials on a website.
+
 
 //setting urls 
 app.post('/seturl', (req, res, next) => {
@@ -74,10 +81,32 @@ app.post('/seturl', (req, res, next) => {
     res.send('Send url list')
 })
 
+app.post('/seturlstatus', (req, res, next) => {
+    let { url, status } = req.body
+    const web = new UrlStatus({
+        url,
+        status,
+        timeStamp: null
+    })
+    web.save((err) => {
+        if (err) throw err;
+    });
+    res.send('Send urls status')
+})
+
 app.get('/geturl', async (req, res, next) => {
     try {
         let urls = await Url.find({})
         res.send(urls)
+    } catch (error) {
+        res.send(error)
+    }
+})
+
+app.get('/geturlstatus', async (req, res, next) => {
+    try {
+        let urlstatus = await UrlStatus.find({})
+        res.send(urlstatus)
     } catch (error) {
         res.send(error)
     }
