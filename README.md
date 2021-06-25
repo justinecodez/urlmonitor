@@ -23,4 +23,4 @@ Followeb by
 ```
 npm run dev
 ```
-Observer the terminal after every 3 consercutive failds for failed URLs report and every two minutes non failed URLs.
+Observer the terminal after every Three consercutive fails for failed URLs report and every Two minutes non successful URLs.
