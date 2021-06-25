@@ -1,22 +1,26 @@
 # urlmonitor
 
-## SETUP INSTRACTION 
+## SETUP INSTRACTION
+This is a [Node.js](https://nodejs.org/en/) based web application.
 
-This is a [Node.js](https://nodejs.org/en/) module available through the
-[npm registry](https://www.npmjs.com/).
-
-Before installing, [download and install Node.js](https://nodejs.org/en/download/).
+Firstly, [download and install Node.js](https://nodejs.org/en/download/).
 Node.js 0.10 or higher is required.
 
-If this is a brand new project, make sure to create a `package.json` first with
-the [`npm init` command](https://docs.npmjs.com/creating-a-package-json-file).
-
-Installation is done using the
-[`npm install` command](https://docs.npmjs.com/getting-started/installing-npm-packages-locally):
-
-```bash
-$ npm install express
+After Node.js is setup, you can clone this repository to your local environment by running the following command,
 ```
+git clone git@github.com:justinepeterson/urlmonitor.git
+```
+# Or
+Download manually the repository to your local enveironemt,
 
-Follow [our installing guide](http://expressjs.com/en/starter/installing.html)
-for more information.
+In your local environment navigate to where you downloaded/cloned the repostiory urmonitor.
+
+Then, run the following command,
+```
+npm install
+```
+Followeb by
+```
+npm run dev
+```
+Observer the terminal after every 3 consercutive failds for failed URLs report and every two minutes non failed URLs.

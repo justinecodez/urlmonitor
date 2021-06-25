@@ -38,11 +38,14 @@ urls.forEach((url) => {
         interval: 2
     });
 
-    website.on('error', (data) => {
-        website.stop();
-    })
-
     website.on('available', (data) => {
+        console.log({
+            SuccessSatusReport: {
+                url: data.url,
+                status: data.code,
+                statusText: data.message
+            }
+        })
         UrlSuccess({
             url: data.url,
             status: data.code,
@@ -83,9 +86,9 @@ async function monitorListingsUsingEventEmitter() {
                     let time2 = Math.round((last3E[1].timeStamp - last3E[2].timeStamp) / (1000 * 60))
                     if (time1 === time2) {
                         console.log({
-                            SatusReport: {
+                            FailSatusReport: {
                                 url: lastEntry[0].url,
-                                status: lastEntry[0].status,                                
+                                status: lastEntry[0].status,
                                 statusText: lastEntry[0].statusText
                             }
                         })
